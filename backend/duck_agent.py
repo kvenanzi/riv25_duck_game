@@ -30,14 +30,17 @@ nova_canvas_client = MCPClient(
 )
 
 # Configure Bedrock Model
-# Using cross-region inference profile for Claude 3.5 Haiku
+# Using Amazon Nova Pro for duck generation
 bedrock_model = BedrockModel(
-    model_id="us.anthropic.claude-3-5-haiku-20241022-v1:0",
+    model_id="us.amazon.nova-pro-v1:0",
     temperature=0.7,
 )
 
+# Get absolute path to backend directory (Nova Canvas will append "output" to this)
+BACKEND_DIR = os.path.abspath(os.path.dirname(__file__))
+
 # Duck-themed system prompt
-SYSTEM_PROMPT = """
+SYSTEM_PROMPT = f"""
 You are an expert duck painter and artist. 
 
 When users describe a duck they want to see, you create it using the Nova Canvas image generation tools.
@@ -48,6 +51,7 @@ Guidelines:
 - If the user's description is vague, add duck-appropriate details
 - Respond with encouraging, duck-themed messages
 - Use duck puns when appropriate (but don't overdo it)
+- IMPORTANT: When calling generate_image, always set workspace_dir to "{BACKEND_DIR}"
 
 Example transformations:
 - "a duck in space" → "a detailed duck wearing a realistic spacesuit, floating in space with stars and planets in the background, digital art"
