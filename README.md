@@ -1,5 +1,7 @@
 # 🦆 Duck Generator Challenge
 
+> **Note:** This project was originally forked from [aws-banjo/riv25_duck_game](https://github.com/aws-banjo/riv25_duck_game)
+
 ## What You're Building
 
 An AI-powered duck image generator! Describe any duck you can imagine, and AWS Bedrock Nova Canvas will create it.
