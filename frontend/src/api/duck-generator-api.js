@@ -21,7 +21,7 @@ export async function fetchDuckImage(description) {
     console.log('Generating duck:', description) // TODO: Remove console.log
 
     // BUG: Typo in endpoint - should be /api/duck/generate
-    const response = await fetch(`${API_BASE_URL}/api/duk/generate`, {
+    const response = await fetch(`${API_BASE_URL}/api/duck/generate`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
