@@ -144,13 +144,40 @@ body {
 }
 
 .error {
-  background: #fee;
-  border: 2px solid #fcc;
-  border-radius: 10px;
-  padding: 15px;
-  color: #c33;
+  background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%);
+  border: 2px solid #ffb3b3;
+  border-radius: 15px;
+  padding: 20px;
   margin-top: 20px;
   text-align: center;
+  box-shadow: 0 4px 12px rgba(255, 102, 102, 0.15);
+  animation: quackShake 0.5s ease-in-out;
+}
+
+.error-icon {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: 10px;
+  animation: waddle 1s ease-in-out infinite;
+}
+
+.error-message {
+  color: #c33;
+  font-size: 1.1rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+@keyframes quackShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+@keyframes waddle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg); }
+  75% { transform: rotate(5deg); }
 }
 
 .examples {
@@ -183,4 +210,34 @@ body {
 
 .examples li::before {
   content: "🦆 ";
+}
+
+.character-count {
+  font-size: 0.9rem;
+  color: #666;
+  margin-top: 5px;
+  text-align: right;
+}
+
+.character-count.warning {
+  color: #f39c12;
+  font-weight: 600;
+}
+
+.character-count.error {
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+.character-count .error-text {
+  display: inline-block;
+  margin-left: 10px;
+}
+
+.input-section input.input-error {
+  border-color: #e74c3c;
+}
+
+.input-section input.input-error:focus {
+  border-color: #e74c3c;
 }

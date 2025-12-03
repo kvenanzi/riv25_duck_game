@@ -30,8 +30,9 @@ nova_canvas_client = MCPClient(
 )
 
 # Configure Bedrock Model
+# Using cross-region inference profile for Claude 3.5 Haiku
 bedrock_model = BedrockModel(
-    model_id="us.anthropic.claude-haiku-4-5-20251001-v1:0",
+    model_id="us.anthropic.claude-3-5-haiku-20241022-v1:0",
     temperature=0.7,
 )
 
@@ -55,15 +56,21 @@ Example transformations:
 
 
 @app.route('/health', methods=['GET'])
-def health():
-    """Health check endpoint"""
+def quack_pond_status():
+    """
+    Check the duck pond health status
+    
+    Duck-themed health check endpoint that reports if the generator is ready.
+    """
     return jsonify({"status": "healthy", "message": "Quack! Duck generator is ready!"})
 
 
 @app.route('/api/duck/generate', methods=['POST'])
-def generate_duck():
+def waddle_hatch_duck():
     """
-    Generate a duck image based on user description
+    Waddle over and hatch a duck image based on user description
+    
+    Duck-themed endpoint that generates custom duck images using AI.
     
     Request body:
     {
@@ -84,21 +91,34 @@ def generate_duck():
         if not data or 'description' not in data:
             return jsonify({
                 "error": "Quack! Please provide a duck description.",
-                "message": "Missing 'description' field in request"
+                "message": "Missing 'description' field in request",
+                "success": False
             }), 400
         
-        description = data['description']
+        description = data['description'].strip()
         
-        # Validate that description mentions duck
-        if 'duck' not in description.lower():
+        # Validate description length
+        if not description:
             return jsonify({
-                "error": "Quack quack! That doesn't sound like a duck...",
-                "message": "Description must include the word 'duck'"
+                "error": "Quack! Please describe your duck before we start hatching.",
+                "message": "Empty description provided",
+                "success": False
             }), 400
+        
+        if len(description) > 1024:
+            return jsonify({
+                "error": "Quack! That's too much duck description. Keep it under 1024 characters!",
+                "message": "Description exceeds maximum length of 1024 characters",
+                "success": False
+            }), 400
+        
+        # Enhance description to include "duck" if not present
+        enhanced_description = quack_enhance_prompt(description)
         
         # Try to generate duck using the agent
         image_data = None
         is_fallback = False
+        generation_error = None
         
         try:
             with nova_canvas_client:
@@ -110,22 +130,25 @@ def generate_duck():
                 )
                 
                 # Ask agent to create the duck
-                print(f"🦆 Generating duck: {description}")
-                response = agent(f"Create an image: {description}")
+                print(f"🦆 Original description: {description}")
+                print(f"🦆 Enhanced description: {enhanced_description}")
+                response = agent(f"Create an image: {enhanced_description}")
                 print(f"✅ Agent response received")
                 
                 # Extract image from response
-                image_data = extract_image_from_response(response)
+                image_data = pluck_duck_from_pond(response)
                 print(f"✅ Image data extracted: {len(image_data) if image_data else 0} chars")
                 
         except Exception as gen_error:
+            generation_error = str(gen_error)
             print(f"⚠️ Generation failed: {gen_error}")
             print("🔄 Attempting to use fallback duck...")
             image_data = None
         
         # If generation failed, use a fallback duck
         if not image_data:
-            image_data = get_fallback_duck()
+            print("🔄 Fetching fallback duck...")
+            image_data = fetch_backup_duckling()
             is_fallback = True
             
             if image_data:
@@ -133,34 +156,37 @@ def generate_duck():
                 return jsonify({
                     "image": image_data,
                     "message": "Quack! Here's a pre-made duck for you!",
-                    "prompt_used": description,
+                    "prompt_used": enhanced_description,
                     "is_fallback": True,
                     "success": True
                 })
             else:
                 print(f"❌ No fallback ducks available")
+                error_details = f"Generation failed: {generation_error}" if generation_error else "No fallback ducks found"
                 return jsonify({
-                    "error": "Quack! No ducks available right now...",
-                    "message": "Generation failed and no fallback ducks found",
+                    "error": "Quack! The duck pond is having trouble right now. Please try again in a moment.",
+                    "message": error_details,
                     "success": False
                 }), 500
         
         return jsonify({
             "image": image_data,
             "message": "Quack quack! Your duck is ready!",
-            "prompt_used": description,
+            "prompt_used": enhanced_description,
             "is_fallback": False,
             "success": True
         })
     
     except Exception as e:
-        print(f"❌ Error in generate_duck: {e}")
+        print(f"❌ Error in waddle_hatch_duck: {e}")
         import traceback
         traceback.print_exc()
         
         # Last resort: try fallback duck
-        fallback = get_fallback_duck()
+        print("🔄 Last resort: attempting fallback duck...")
+        fallback = fetch_backup_duckling()
         if fallback:
+            print("✅ Last resort fallback successful")
             return jsonify({
                 "image": fallback,
                 "message": "Quack! Here's a pre-made duck for you!",
@@ -168,22 +194,59 @@ def generate_duck():
                 "success": True
             })
         
+        print("❌ All duck generation attempts failed")
         return jsonify({
-            "error": "Quack! Something went wrong while hatching your duck...",
+            "error": "Quack! Something went wrong while hatching your duck. Please try again.",
             "message": str(e),
             "success": False
         }), 500
 
 
-def extract_image_from_response(response):
+def quack_enhance_prompt(description):
     """
-    Extract image file path from agent response
+    Quack-enhance user description to ensure it includes "duck"
     
-    The Nova Canvas MCP saves images to the output folder.
-    This function finds the saved image and returns its path.
+    Duck-themed prompt enhancement that naturally adds "duck" to descriptions
+    that don't already include it, maintaining the user's creative intent.
+    
+    Args:
+        description: User's duck description
+        
+    Returns:
+        Enhanced description that includes "duck"
+    """
+    if 'duck' in description.lower():
+        return description
+    
+    # Add "a duck" naturally to the description
+    description = description.strip()
+    
+    # Handle common patterns
+    if description.startswith(('wearing', 'with', 'in', 'on', 'at')):
+        return f"a duck {description}"
+    elif description.startswith(('cool', 'cute', 'funny', 'silly', 'happy', 'sad', 'angry')):
+        return f"a {description} duck"
+    else:
+        # Default: prepend "a duck"
+        return f"a duck {description}"
+
+
+def pluck_duck_from_pond(response):
+    """
+    Pluck the freshly hatched duck image from the pond
+    
+    Duck-themed function that extracts the generated image from the agent response.
+    The Nova Canvas MCP saves images to the output folder, and this function
+    finds the most recently hatched duck and returns it as base64 data.
+    
+    Args:
+        response: Agent response from Nova Canvas
+        
+    Returns:
+        Base64-encoded image data URL, or empty string if no duck found
     """
     print("=" * 50)
-    print("🔍 EXTRACT_IMAGE_FROM_RESPONSE CALLED")
+    print("🦆 PLUCK_DUCK_FROM_POND CALLED")
     print("=" * 50)
     
     # Nova Canvas saves images to backend/output/ folder
@@ -216,11 +279,16 @@ def extract_image_from_response(response):
     return ""
 
 
-def get_fallback_duck():
+def fetch_backup_duckling():
     """
-    Get a random fallback duck image from the output directory
+    Fetch a backup duckling from the emergency duck pond
     
-    Returns a base64-encoded image data URL, or None if no fallback ducks exist.
+    Duck-themed fallback function that retrieves a pre-generated duck image
+    when the AI generation waddles into trouble. Randomly selects from
+    available backup ducklings to keep things interesting.
+    
+    Returns:
+        Base64-encoded image data URL, or None if no backup ducklings exist
     """
     print("=" * 50)
     print("🦆 GETTING FALLBACK DUCK")
