@@ -1,50 +1,58 @@
-/**
- * Duck Generator API Client
- * 
- * ⚠️ THIS FILE HAS BUGS! ⚠️
- * 
- * Issues to fix:
- * 1. Function names are not duck-themed (violates steering doc conventions)
- * 2. Missing error handling
- * 3. Has a typo in the endpoint URL
- * 4. console.log statements left in (should be removed)
- */
-
 const API_BASE_URL = import.meta.env.VITE_AGENT_ENDPOINT || 'http://localhost:8081'
 
 /**
  * Generate a duck image based on description
- * 
- * TODO: Rename this to use duck-themed naming (e.g., quackFetch, generateDuck, etc.)
  */
-export async function fetchDuckImage(description) {
-    console.log('Generating duck:', description) // TODO: Remove console.log
+export async function quackHatchDuck(description) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/duck/generate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ description }),
+        })
 
-    // BUG: Typo in endpoint - should be /api/duck/generate
-    const response = await fetch(`${API_BASE_URL}/api/duck/generate`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ description }),
-    })
+        if (!response.ok) {
+            let errorMessage = 'Quack! Something ruffled my feathers. Please try again.'
+            try {
+                const errorBody = await response.json()
+                if (errorBody?.message) {
+                    errorMessage = `Quack! ${errorBody.message}`
+                }
+            } catch {
+                // Ignore JSON parse errors and use default message
+            }
+            throw new Error(errorMessage)
+        }
 
-    // BUG: No error handling!
-    const data = await response.json()
-
-    console.log('Duck generated:', data) // TODO: Remove console.log
-
-    return data
+        const data = await response.json()
+        return data
+    } catch (error) {
+        throw new Error(
+            error?.message ||
+            'Quack! The pond is a bit choppy right now. Please waddle back and try again.'
+        )
+    }
 }
 
 /**
  * Check if the API is healthy
- * 
- * TODO: Rename to use duck-themed naming
  */
-export async function checkHealth() {
-    // BUG: No error handling!
-    const response = await fetch(`${API_BASE_URL}/health`)
-    const data = await response.json()
-    return data
+export async function waddleCheckPondHealth() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/health`)
+
+        if (!response.ok) {
+            throw new Error('Quack! The duck pond looks a bit under the weather.')
+        }
+
+        const data = await response.json()
+        return data
+    } catch (error) {
+        throw new Error(
+            error?.message ||
+            'Quack! I could not reach the duck pond. Please make sure the backend is running.'
+        )
+    }
 }

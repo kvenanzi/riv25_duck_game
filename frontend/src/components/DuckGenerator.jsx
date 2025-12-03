@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import PromptInput from './PromptInput'
-import { fetchDuckImage } from '../api/duck-generator-api'
+import { quackHatchDuck } from '../api/duck-generator-api'
 
 /**
  * DuckGenerator Component
@@ -19,23 +19,45 @@ import { fetchDuckImage } from '../api/duck-generator-api'
  */
 function DuckGenerator() {
   const [prompt, setPrompt] = useState('')
-  // TODO: Add state for:
-  // - loading (boolean)
-  // - generatedDuck (object with image and message)
-  // - error (string or null)
+  const [isHatching, setIsHatching] = useState(false)
+  const [hatchedDuck, setHatchedDuck] = useState(null)
+  const [duckError, setDuckError] = useState(null)
 
   const handleGenerate = async () => {
-    // TODO: Implement this function!
-    // Should:
-    // 1. Validate prompt is not empty
-    // 2. Set loading state
-    // 3. Call fetchDuckImage API
-    // 4. Handle success (store image)
-    // 5. Handle errors (show error message)
-    // 6. Clear loading state
-    
-    console.log('Generate button clicked with prompt:', prompt)
-    // BUG: This doesn't actually do anything!
+    if (!prompt.trim()) {
+      setDuckError("Quack! Please describe your duck before we start hatching.")
+      return
+    }
+
+    setDuckError(null)
+    setIsHatching(true)
+    setHatchedDuck(null)
+
+    try {
+      const result = await quackHatchDuck(prompt)
+
+      if (!result?.success || !result?.image) {
+        throw new Error('Quack! I could not hatch that duck. Please try a new description.')
+      }
+
+      setHatchedDuck({
+        image: result.image,
+        message: result.message || 'Quack quack! Your duck is ready!',
+      })
+    } catch (error) {
+      setDuckError(
+        error?.message ||
+          'Quack! Something splashed the pond. Please waddle back and try again.'
+      )
+    } finally {
+      setIsHatching(false)
+    }
+  }
+
+  const handleGenerateAnother = () => {
+    setPrompt('')
+    setDuckError(null)
+    setHatchedDuck(null)
   }
 
   return (
@@ -44,21 +66,43 @@ function DuckGenerator() {
         value={prompt}
         onChange={setPrompt}
         onSubmit={handleGenerate}
-        disabled={false} // TODO: Should be disabled while loading
+        disabled={isHatching}
       />
       
       <button 
         className="button-primary"
         onClick={handleGenerate}
-        disabled={false} // TODO: Should be disabled while loading or if prompt is empty
+        disabled={isHatching || !prompt.trim()}
       >
-        Generate Duck
+        {isHatching ? 'Hatching your duck...' : 'Generate Duck'}
       </button>
-      
-      {/* TODO: Add loading state display */}
-      {/* TODO: Add error display */}
-      {/* TODO: Add generated duck image display */}
-      {/* TODO: Add "Generate Another" button */}
+
+      {isHatching && (
+        <div className="loading">
+          <div className="loading-spinner" />
+          <p>Hatching your duck...</p>
+        </div>
+      )}
+
+      {duckError && (
+        <div className="error">
+          {duckError}
+        </div>
+      )}
+
+      {hatchedDuck && (
+        <div className="duck-display">
+          <div className="message">{hatchedDuck.message}</div>
+          <img src={hatchedDuck.image} alt="Your generated duck" />
+          <button
+            className="button-primary"
+            type="button"
+            onClick={handleGenerateAnother}
+          >
+            Generate Another Duck
+          </button>
+        </div>
+      )}
     </div>
   )
 }
